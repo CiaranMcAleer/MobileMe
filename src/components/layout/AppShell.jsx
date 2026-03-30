@@ -20,7 +20,7 @@ export default function AppShell({
         <div className="hero-meta">
           <div className="data-badge panel-shadow">
             <span className="eyebrow">Data</span>
-            <strong>Live CSV</strong>
+            <strong>Published CSV snapshot</strong>
           </div>
           <div className="status-chip">{headerBadge}</div>
         </div>
@@ -39,7 +39,7 @@ export default function AppShell({
           <p>
             {bestStation
               ? `${bestStation.brand} · ${bestStation.price.toFixed(1)}p`
-              : error || "Adjust the radius or wait for live data."}
+              : error || "Adjust the radius or wait for the next published snapshot."}
           </p>
         </article>
 

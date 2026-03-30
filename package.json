@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 4173"
+    "refresh-data": "node ./scripts/prepare-fuel-data.mjs",
+    "dev": "vite --host 127.0.0.1 --port 4173",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "maplibre-gl": "^5.11.0",

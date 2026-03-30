@@ -58,9 +58,9 @@ export function useFuelFinderData(fuelType) {
 
         setStations([]);
         setError(
-          loadError instanceof Error ? loadError.message : "Failed to load live data.",
+          loadError instanceof Error ? loadError.message : "Failed to load the published fuel data.",
         );
-        setStatus("Live data unavailable.");
+        setStatus("Fuel price snapshot unavailable.");
         setIsLoading(false);
       }
     }
@@ -100,8 +100,8 @@ export function useFuelFinderData(fuelType) {
       if (payload.status === "error") {
         setStations([]);
         setRowsCount(0);
-        setError(payload.error ?? "Failed to process live data.");
-        setStatus("Live data unavailable.");
+        setError(payload.error ?? "Failed to process the published fuel data.");
+        setStatus("Fuel price snapshot unavailable.");
         setIsLoading(false);
         setIsRefreshing(false);
         return;
@@ -125,7 +125,7 @@ export function useFuelFinderData(fuelType) {
       setRowsCount(0);
       hasProcessedRef.current = false;
       setError("Worker processing failed.");
-      setStatus("Live data unavailable.");
+      setStatus("Fuel price snapshot unavailable.");
       setIsLoading(false);
       setIsRefreshing(false);
     };

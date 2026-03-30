@@ -1,6 +1,9 @@
 import { parseCsv } from "../utils/csv";
 
-const CSV_URL = "/fuel-finder/latest-fuelprices.csv";
+const CSV_URL = new URL(
+  "data/latest-fuelprices.csv",
+  `${globalThis.location.origin}${import.meta.env.BASE_URL}`,
+).toString();
 
 export function getCurrentPosition() {
   return new Promise((resolve, reject) => {
@@ -31,7 +34,7 @@ export async function fetchLatestFuelRows() {
   const rows = parseCsv(text);
 
   if (!rows.length) {
-    throw new Error("Live CSV loaded, but no station rows were parsed.");
+    throw new Error("Fuel price snapshot loaded, but no station rows were parsed.");
   }
 
   return rows;

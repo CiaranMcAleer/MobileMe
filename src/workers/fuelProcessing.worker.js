@@ -54,7 +54,7 @@ self.onmessage = async (event) => {
     });
   } catch (error) {
     self.postMessage({
-      error: error instanceof Error ? error.message : "Failed to process live data.",
+      error: error instanceof Error ? error.message : "Failed to process the published fuel data.",
       requestId,
       status: "error",
       type,

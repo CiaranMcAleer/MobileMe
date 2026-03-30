@@ -55,7 +55,7 @@ export default function HomeRoute() {
   const emptyMessage = error
     ? error
     : isInfiniteRadius(radiusValue)
-      ? `No ${fuelType} stations are available in the live feed.`
+      ? `No ${fuelType} stations are available in the published snapshot.`
       : `No ranked ${fuelType} stations were found within ${getRadiusMilesLabel(radiusValue)}.`;
   const appStatus = isRefreshing ? `${status} Rendering updated results when ready.` : status;
 

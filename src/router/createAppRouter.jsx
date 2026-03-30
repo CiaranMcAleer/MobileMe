@@ -29,7 +29,9 @@ function buildRoutes() {
     .sort((left, right) => left.path.localeCompare(right.path));
 }
 
-const router = createBrowserRouter(buildRoutes());
+const router = createBrowserRouter(buildRoutes(), {
+  basename: import.meta.env.BASE_URL,
+});
 
 export function AppRouterProvider() {
   return <RouterProvider router={router} />;
