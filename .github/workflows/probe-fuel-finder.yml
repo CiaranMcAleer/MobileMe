@@ -26,26 +26,24 @@ jobs:
           body_file="$(mktemp)"
           header_file="$(mktemp)"
 
-          http_code="$({
-            curl -sS --compressed --http1.1 \
-              -D "$header_file" \
-              -o "$body_file" \
-              -w '%{http_code}' \
-              -X POST 'https://www.fuel-finder.service.gov.uk/api/v1/oauth/generate_access_token' \
-              -H 'Accept: application/json, text/plain, */*' \
-              -H 'Content-Type: application/x-www-form-urlencoded' \
-              --data-urlencode 'grant_type=client_credentials' \
-              --data-urlencode "client_id=$FUEL_FINDER_CLIENT_ID" \
-              --data-urlencode "client_secret=$FUEL_FINDER_CLIENT_SECRET" \
-              --data-urlencode 'scope=fuelfinder.read'
-          })"
+          http_code=$(curl -sS --compressed --http1.1 \
+            -D "$header_file" \
+            -o "$body_file" \
+            -w '%{http_code}' \
+            -X POST 'https://www.fuel-finder.service.gov.uk/api/v1/oauth/generate_access_token' \
+            -H 'Accept: application/json, text/plain, */*' \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'grant_type=client_credentials' \
+            --data-urlencode "client_id=$FUEL_FINDER_CLIENT_ID" \
+            --data-urlencode "client_secret=$FUEL_FINDER_CLIENT_SECRET" \
+            --data-urlencode 'scope=fuelfinder.read')
 
           echo "HTTP status: $http_code"
           echo "Response headers:"
           sed -E 's/(Set-Cookie:).*/\1 [redacted]/I' "$header_file"
           echo
           echo "Response body preview:"
-          python3 - <<'PY' "$body_file"
+          python3 - "$body_file" <<'PY'
 import pathlib
 import sys
 path = pathlib.Path(sys.argv[1])
