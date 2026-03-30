@@ -1,6 +1,8 @@
+import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 const OUTPUT_RELATIVE_PATH = ["public", "data", "latest-fuelprices.csv"];
 const DEFAULT_ENVIRONMENT = "production";
@@ -132,25 +134,52 @@ function getEnvironmentConfig() {
   };
 }
 
-async function postForm(url, fields) {
-  const formBody = new URLSearchParams();
-  Object.entries(fields).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      formBody.set(key, String(value));
+const execFileAsync = promisify(execFile);
+
+async function requestJson({ url, method = "GET", headers = {}, formFields = null }) {
+  const curlArguments = ["-sS", "-X", method, url, "-w", "\n%{http_code}"];
+
+  Object.entries(headers).forEach(([name, value]) => {
+    curlArguments.push("-H", `${name}: ${value}`);
+  });
+
+  if (formFields) {
+    const formBody = new URLSearchParams();
+    Object.entries(formFields).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        formBody.set(key, String(value));
+      }
+    });
+
+    curlArguments.push("--data", formBody.toString());
+  }
+
+  const { stdout, stderr } = await execFileAsync("curl", curlArguments, {
+    maxBuffer: 10 * 1024 * 1024,
+  });
+
+  const lines = stdout.split("\n");
+  const statusText = lines.pop() ?? "";
+  const responseText = lines.join("\n");
+  const status = Number(statusText);
+
+  if (!Number.isInteger(status)) {
+    throw new Error(`Unexpected curl response from ${url}: ${stderr || stdout}`);
+  }
+
+  let payload = null;
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText);
+    } catch (error) {
+      throw new Error(
+        `Expected JSON from ${url}, received ${responseText.slice(0, 200)}.`,
+      );
     }
-  });
+  }
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/x-www-form-urlencoded",
-    },
-    body: formBody.toString(),
-  });
-
-  const payload = await parseJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(`${url} returned ${response.status}: ${extractErrorMessage(payload)}`);
+  if (status < 200 || status >= 300) {
+    throw new Error(`${url} returned ${status}: ${extractErrorMessage(payload)}`);
   }
 
   return unwrapApiPayload(payload);
@@ -164,31 +193,12 @@ async function getJson(url, token, params) {
     }
   });
 
-  const targetUrl = `${url}?${search.toString()}`;
-  const response = await fetch(targetUrl, {
+  return requestJson({
+    url: `${url}?${search.toString()}`,
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-
-  const payload = await parseJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(`${targetUrl} returned ${response.status}: ${extractErrorMessage(payload)}`);
-  }
-
-  return unwrapApiPayload(payload);
-}
-
-async function parseJsonResponse(response) {
-  const responseText = await response.text();
-
-  try {
-    return responseText ? JSON.parse(responseText) : null;
-  } catch (error) {
-    throw new Error(
-      `Expected JSON from ${response.url}, received ${responseText.slice(0, 200) || "empty response"}.`,
-    );
-  }
 }
 
 function extractErrorMessage(payload) {
@@ -228,11 +238,18 @@ function unwrapApiPayload(payload) {
 }
 
 async function fetchAccessToken(apiBaseUrl, clientId, clientSecret) {
-  const tokenPayload = await postForm(`${apiBaseUrl}/oauth/generate_access_token`, {
-    grant_type: "client_credentials",
-    client_id: clientId,
-    client_secret: clientSecret,
-    scope: "fuelfinder.read",
+  const tokenPayload = await requestJson({
+    url: `${apiBaseUrl}/oauth/generate_access_token`,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    formFields: {
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+      scope: "fuelfinder.read",
+    },
   });
 
   const accessToken = tokenPayload?.access_token;
