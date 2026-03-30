@@ -1,0 +1,51 @@
+name: Probe Fuel Finder Connectivity
+
+on:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe token endpoint with curl
+        env:
+          FUEL_FINDER_CLIENT_ID: ${{ secrets.FUEL_FINDER_CLIENT_ID }}
+          FUEL_FINDER_CLIENT_SECRET: ${{ secrets.FUEL_FINDER_CLIENT_SECRET }}
+        run: |
+          if [ -z "$FUEL_FINDER_CLIENT_ID" ] || [ -z "$FUEL_FINDER_CLIENT_SECRET" ]; then
+            echo "Missing Fuel Finder secrets"
+            exit 1
+          fi
+
+          body_file="$(mktemp)"
+          header_file="$(mktemp)"
+
+          http_code="$({
+            curl -sS --compressed --http1.1 \
+              -D "$header_file" \
+              -o "$body_file" \
+              -w '%{http_code}' \
+              -X POST 'https://www.fuel-finder.service.gov.uk/api/v1/oauth/generate_access_token' \
+              -H 'Accept: application/json, text/plain, */*' \
+              -H 'Content-Type: application/x-www-form-urlencoded' \
+              --data-urlencode 'grant_type=client_credentials' \
+              --data-urlencode "client_id=$FUEL_FINDER_CLIENT_ID" \
+              --data-urlencode "client_secret=$FUEL_FINDER_CLIENT_SECRET" \
+              --data-urlencode 'scope=fuelfinder.read'
+          })"
+
+          echo "HTTP status: $http_code"
+          echo "Response headers:"
+          sed -E 's/(Set-Cookie:).*/\1 [redacted]/I' "$header_file"
+          echo
+          echo "Response body preview:"
+          python3 - <<'PY' "$body_file"
+import pathlib
+import sys
+path = pathlib.Path(sys.argv[1])
+body = path.read_text(errors='replace')
+print(body[:400] if body else '<empty body>')
+PY
