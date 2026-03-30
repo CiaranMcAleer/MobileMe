@@ -43,10 +43,4 @@ jobs:
           sed -E 's/(Set-Cookie:).*/\1 [redacted]/I' "$header_file"
           echo
           echo "Response body preview:"
-          python3 - "$body_file" <<'PY'
-import pathlib
-import sys
-path = pathlib.Path(sys.argv[1])
-body = path.read_text(errors='replace')
-print(body[:400] if body else '<empty body>')
-PY
+          python3 -c 'import pathlib, sys; body = pathlib.Path(sys.argv[1]).read_text(errors="replace"); print(body[:400] if body else "<empty body>")' "$body_file"
