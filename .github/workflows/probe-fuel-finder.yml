@@ -1,6 +1,9 @@
 name: Probe Fuel Finder Connectivity
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
