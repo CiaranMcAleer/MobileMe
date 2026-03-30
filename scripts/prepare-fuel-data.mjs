@@ -134,15 +134,32 @@ function getEnvironmentConfig() {
   };
 }
 
+const API_REQUEST_HEADERS = {
+  Accept: "application/json, text/plain, */*",
+  Origin: "https://www.developer.fuel-finder.service.gov.uk",
+  Referer: "https://www.developer.fuel-finder.service.gov.uk/",
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+};
+
+
 const execFileAsync = promisify(execFile);
 
 async function requestJson({ url, method = "GET", headers = {}, formFields = null }) {
-  const curlArguments = ["-sS", "-X", method, url, "-w", "\n%{http_code}"];
+  const curlArguments = [
+    "-sS",
+    "--compressed",
+    "--http1.1",
+    "-X",
+    method,
+    url,
+    "-w",
+    "\n%{http_code}",
+  ];
 
-  Object.entries(headers).forEach(([name, value]) => {
+  Object.entries({ ...API_REQUEST_HEADERS, ...headers }).forEach(([name, value]) => {
     curlArguments.push("-H", `${name}: ${value}`);
   });
-
   if (formFields) {
     const formBody = new URLSearchParams();
     Object.entries(formFields).forEach(([key, value]) => {
