@@ -132,14 +132,20 @@ function getEnvironmentConfig() {
   };
 }
 
-async function postJson(url, body, extraHeaders = {}) {
+async function postForm(url, fields) {
+  const formBody = new URLSearchParams();
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      formBody.set(key, String(value));
+    }
+  });
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      "content-type": "application/json",
-      ...extraHeaders,
+      "content-type": "application/x-www-form-urlencoded",
     },
-    body: JSON.stringify(body),
+    body: formBody.toString(),
   });
 
   const payload = await parseJsonResponse(response);
@@ -222,9 +228,11 @@ function unwrapApiPayload(payload) {
 }
 
 async function fetchAccessToken(apiBaseUrl, clientId, clientSecret) {
-  const tokenPayload = await postJson(`${apiBaseUrl}/oauth/generate_access_token`, {
+  const tokenPayload = await postForm(`${apiBaseUrl}/oauth/generate_access_token`, {
+    grant_type: "client_credentials",
     client_id: clientId,
     client_secret: clientSecret,
+    scope: "fuelfinder.read",
   });
 
   const accessToken = tokenPayload?.access_token;
