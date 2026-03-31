@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-03-31T18:54:38.278Z",
+  "environment": "production",
+  "pricesCount": 7521,
+  "forecourtsCount": 7575,
+  "latest": {
+    "csvKey": "data/latest-fuelprices.csv",
+    "manifestKey": "data/latest-fuelprices.json"
+  },
+  "daily": {
+    "csvKey": "data/history/daily/2026-03-31/latest-fuelprices.csv",
+    "manifestKey": "data/history/daily/2026-03-31/manifest.json"
+  },
+  "versioned": {
+    "csvKey": "data/history/runs/2026/03/2026-03-31T18-54-38.278Z/latest-fuelprices.csv",
+    "manifestKey": "data/history/runs/2026/03/2026-03-31T18-54-38.278Z/manifest.json"
+  }
+}
