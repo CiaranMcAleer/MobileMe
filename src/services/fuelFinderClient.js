@@ -1,7 +1,8 @@
 import { parseCsv } from "../utils/csv";
 
+const CSV_PATH = import.meta.env.VITE_FUEL_DATA_PATH || "data/latest-fuelprices.csv";
 const CSV_URL = new URL(
-  "data/latest-fuelprices.csv",
+  CSV_PATH,
   `${globalThis.location.origin}${import.meta.env.BASE_URL}`,
 ).toString();
 
