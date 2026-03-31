@@ -5,12 +5,10 @@
   "type": "module",
   "scripts": {
     "refresh-data": "node ./scripts/prepare-fuel-data.mjs",
+    "refresh-data:commit": "./scripts/update-fuel-snapshots.sh",
     "dev": "vite --host 127.0.0.1 --port 4173",
     "build": "vite build",
-    "build:cloudflare": "VITE_APP_BASE_PATH=/ vite build",
-    "preview": "vite preview",
-    "cf:dev": "npm run build:cloudflare && wrangler dev",
-    "cf:deploy": "npm run build:cloudflare && wrangler deploy"
+    "preview": "vite preview"
   },
   "dependencies": {
     "maplibre-gl": "^5.11.0",
@@ -19,7 +17,6 @@
     "react-router-dom": "^7.6.3"
   },
   "devDependencies": {
-    "vite": "^7.1.5",
-    "wrangler": "^4.41.1"
+    "vite": "^7.1.5"
   }
 }

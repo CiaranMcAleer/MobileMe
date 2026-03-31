@@ -3,13 +3,28 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   buildFuelSnapshotCsv,
+  buildSnapshotManifest,
+  buildSnapshotStoragePlan,
   fetchFuelFinderSnapshot,
   getFuelFinderConfigFromEnv,
 } from "../lib/fuelSnapshot.js";
 
-const OUTPUT_RELATIVE_PATH = ["public", "data", "latest-fuelprices.csv"];
+const PUBLIC_DIRECTORY_SEGMENTS = ["public"];
+
+function resolvePublicPath(scriptDirectory, snapshotKey) {
+  return path.resolve(scriptDirectory, "..", ...PUBLIC_DIRECTORY_SEGMENTS, ...snapshotKey.split("/"));
+}
+
+async function writeSnapshotFile(scriptDirectory, snapshotKey, contents) {
+  const outputFile = resolvePublicPath(scriptDirectory, snapshotKey);
+  await mkdir(path.dirname(outputFile), { recursive: true });
+  await writeFile(outputFile, contents, "utf8");
+  return outputFile;
+}
 
 async function main() {
+  const currentTime = new Date();
+  const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
   const { apiBaseUrl, clientId, clientSecret, environment } = getFuelFinderConfigFromEnv(process.env);
   const { prices, forecourts } = await fetchFuelFinderSnapshot({
     fetchImpl: fetch,
@@ -19,15 +34,30 @@ async function main() {
   });
 
   const csvText = buildFuelSnapshotCsv({ prices, forecourts });
-  const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
-  const outputDirectory = path.resolve(scriptDirectory, "..", ...OUTPUT_RELATIVE_PATH.slice(0, -1));
-  const outputFile = path.join(outputDirectory, OUTPUT_RELATIVE_PATH.at(-1));
+  const storagePlan = buildSnapshotStoragePlan(currentTime);
+  const manifest = buildSnapshotManifest({
+    storagePlan,
+    environment,
+    pricesCount: prices.length,
+    forecourtsCount: forecourts.length,
+  });
+  const manifestText = `${JSON.stringify(manifest, null, 2)}\n`;
 
-  await mkdir(outputDirectory, { recursive: true });
-  await writeFile(outputFile, csvText, "utf8");
+  const writtenFiles = await Promise.all([
+    writeSnapshotFile(scriptDirectory, storagePlan.latestCsvKey, csvText),
+    writeSnapshotFile(scriptDirectory, storagePlan.latestManifestKey, manifestText),
+    writeSnapshotFile(scriptDirectory, storagePlan.dailyCsvKey, csvText),
+    writeSnapshotFile(scriptDirectory, storagePlan.dailyManifestKey, manifestText),
+    // Immutable per-run snapshots keep history for future analytics instead of overwriting it.
+    writeSnapshotFile(scriptDirectory, storagePlan.versionedCsvKey, csvText),
+    writeSnapshotFile(scriptDirectory, storagePlan.versionedManifestKey, manifestText),
+  ]);
 
   console.log(
-    `Saved Fuel Finder ${environment} snapshot to ${outputFile} (${prices.length.toLocaleString()} priced forecourts, ${forecourts.length.toLocaleString()} forecourt records).`,
+    [
+      `Saved Fuel Finder ${environment} snapshot set (${prices.length.toLocaleString()} priced forecourts, ${forecourts.length.toLocaleString()} forecourt records).`,
+      ...writtenFiles.map((filePath) => `- ${filePath}`),
+    ].join("\n"),
   );
 }
 
