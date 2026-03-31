@@ -20,9 +20,11 @@ export default function HomeRoute() {
   const [selectedStationId, setSelectedStationId] = useState(null);
   const {
     error,
+    hasRequestedLocation,
     isLoading,
     isRefreshing,
     lastUpdatedLabel,
+    requestLocation,
     rowsCount,
     stations,
     status,
@@ -49,21 +51,27 @@ export default function HomeRoute() {
 
   const locationLabel = userLocation
     ? getLocationLabel(userLocation)
-    : "Location access required";
+    : hasRequestedLocation
+      ? "Location access still needed"
+      : "Location access required";
 
   const headerBadge = isLoading ? "Loading" : error ? "Failed" : isRefreshing ? "Updating" : "Live";
   const emptyMessage = error
     ? error
-    : isInfiniteRadius(radiusValue)
-      ? `No ${fuelType} stations are available in the published snapshot.`
-      : `No ranked ${fuelType} stations were found within ${getRadiusMilesLabel(radiusValue)}.`;
+    : hasRequestedLocation
+      ? isInfiniteRadius(radiusValue)
+        ? `No ${fuelType} stations are available in the published snapshot.`
+        : `No ranked ${fuelType} stations were found within ${getRadiusMilesLabel(radiusValue)}.`
+      : "Enable location access to see nearby stations.";
   const appStatus = isRefreshing ? `${status} Rendering updated results when ready.` : status;
 
   return (
     <AppShell
       bestStation={bestStation}
+      canRequestLocation={!userLocation}
       error={error}
       headerBadge={headerBadge}
+      isRequestingLocation={isLoading && !userLocation}
       locationLabel={locationLabel}
       map={
         <FuelMap
@@ -73,6 +81,7 @@ export default function HomeRoute() {
           userLocation={userLocation}
         />
       }
+      onRequestLocation={requestLocation}
       stationCount={stationsInRange.length || rowsCount}
       status={appStatus}
     >

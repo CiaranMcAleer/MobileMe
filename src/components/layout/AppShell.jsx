@@ -1,11 +1,14 @@
 import React from "react";
 export default function AppShell({
   bestStation,
+  canRequestLocation,
   children,
   error,
   headerBadge,
+  isRequestingLocation,
   locationLabel,
   map,
+  onRequestLocation,
   status,
   stationCount,
 }) {
@@ -31,6 +34,16 @@ export default function AppShell({
           <span className="eyebrow">Near</span>
           <strong>{locationLabel}</strong>
           <p>{status}</p>
+          {canRequestLocation ? (
+            <button
+              className="location-request-button"
+              disabled={isRequestingLocation}
+              onClick={onRequestLocation}
+              type="button"
+            >
+              {isRequestingLocation ? "Requesting location…" : "Enable my location"}
+            </button>
+          ) : null}
         </article>
 
         <article className="summary-card panel-shadow accent-card">

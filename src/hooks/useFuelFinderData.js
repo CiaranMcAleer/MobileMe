@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentPosition } from "../services/fuelFinderClient";
 import { formatTimestamp } from "../utils/stations";
 
@@ -15,11 +15,12 @@ export function useFuelFinderData(fuelType) {
   const [stations, setStations] = useState([]);
   const [rowsCount, setRowsCount] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
-  const [status, setStatus] = useState("Requesting your location…");
-  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState("Tap to enable location and rank nearby stations.");
+  const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [lastUpdatedTimestamp, setLastUpdatedTimestamp] = useState(null);
+  const [hasRequestedLocation, setHasRequestedLocation] = useState(false);
 
   useEffect(() => {
     const worker = createFuelProcessingWorker();
@@ -31,45 +32,33 @@ export function useFuelFinderData(fuelType) {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
+  const requestLocation = useCallback(async () => {
+    try {
+      setHasRequestedLocation(true);
+      setIsLoading(true);
+      setIsRefreshing(false);
+      setError("");
+      setStatus("Requesting your location…");
 
-    async function loadLocationAndInitialStations() {
-      try {
-        setIsLoading(true);
-        setError("");
-        setStatus("Requesting your location…");
+      const position = await getCurrentPosition();
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
 
-        const position = await getCurrentPosition();
-        if (!active) {
-          return;
-        }
-
-        const coords = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        };
-
-        setUserLocation(coords);
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setStations([]);
-        setError(
-          loadError instanceof Error ? loadError.message : "Failed to load the published fuel data.",
-        );
-        setStatus("Fuel price snapshot unavailable.");
-        setIsLoading(false);
-      }
+      setUserLocation(coords);
+    } catch (loadError) {
+      setStations([]);
+      setRowsCount(0);
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Location access failed. We could not request your position.",
+      );
+      setStatus("Location access is required to rank nearby stations.");
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
-
-    loadLocationAndInitialStations();
-
-    return () => {
-      active = false;
-    };
   }, []);
 
   useEffect(() => {
@@ -147,9 +136,11 @@ export function useFuelFinderData(fuelType) {
 
   return {
     error,
+    hasRequestedLocation,
     isLoading,
     isRefreshing,
     lastUpdatedLabel,
+    requestLocation,
     rowsCount,
     stations,
     status,
