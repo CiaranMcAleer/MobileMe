@@ -43,27 +43,25 @@ function createMarkerElement({ isSelected, label, variant }) {
   return element;
 }
 
-function createFeatureCollection(stations, selectedStationId) {
+function createFeatureCollection(stations) {
   return {
     type: "FeatureCollection",
-    features: stations
-      .filter((station) => station.id !== selectedStationId)
-      .map((station) => ({
-        type: "Feature",
-        geometry: {
-          type: "Point",
-          coordinates: [station.longitude, station.latitude],
-        },
-        properties: {
-          id: station.id,
-          name: station.name,
-          brand: station.brand,
-          city: station.city,
-          postcode: station.postcode,
-          price: station.price,
-          priceLabel: formatPrice(station.price),
-        },
-      })),
+    features: stations.map((station) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [station.longitude, station.latitude],
+      },
+      properties: {
+        id: station.id,
+        name: station.name,
+        brand: station.brand,
+        city: station.city,
+        postcode: station.postcode,
+        price: station.price,
+        priceLabel: formatPrice(station.price),
+      },
+    })),
   };
 }
 
@@ -73,7 +71,7 @@ function addStationLayers(map) {
     cluster: true,
     clusterMaxZoom: 13,
     clusterRadius: 46,
-    data: createFeatureCollection([], null),
+    data: createFeatureCollection([]),
   });
 
   map.addLayer({
@@ -282,7 +280,7 @@ export default function FuelMap({
       return;
     }
 
-    source.setData(createFeatureCollection(stations, selectedStationId));
+    source.setData(createFeatureCollection(stations));
 
     if (userMarkerRef.current) {
       userMarkerRef.current.remove();
