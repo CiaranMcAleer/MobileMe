@@ -15,7 +15,8 @@ export function useFuelFinderData(fuelType) {
   const [stations, setStations] = useState([]);
   const [rowsCount, setRowsCount] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
-  const [status, setStatus] = useState("Tap to enable location and rank nearby stations.");
+  const [locationSource, setLocationSource] = useState(null);
+  const [status, setStatus] = useState("Use your current location or pick one on the map to rank nearby stations.");
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -46,19 +47,26 @@ export function useFuelFinderData(fuelType) {
         longitude: position.coords.longitude,
       };
 
+      setLocationSource("device");
       setUserLocation(coords);
     } catch (loadError) {
-      setStations([]);
-      setRowsCount(0);
       setError(
         loadError instanceof Error
           ? loadError.message
           : "Location access failed. We could not request your position.",
       );
-      setStatus("Location access is required to rank nearby stations.");
+      setStatus("Location access is optional. You can still pick a location on the map.");
       setIsLoading(false);
       setIsRefreshing(false);
     }
+  }, []);
+
+  const setManualLocation = useCallback((coords) => {
+    setHasRequestedLocation(true);
+    setError("");
+    setLocationSource("manual");
+    setStatus("Using the map location you selected.");
+    setUserLocation(coords);
   }, []);
 
   useEffect(() => {
@@ -140,8 +148,10 @@ export function useFuelFinderData(fuelType) {
     isLoading,
     isRefreshing,
     lastUpdatedLabel,
+    locationSource,
     requestLocation,
     rowsCount,
+    setManualLocation,
     stations,
     status,
     userLocation,

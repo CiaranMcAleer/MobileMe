@@ -18,14 +18,17 @@ export default function HomeRoute() {
   const [fuelType, setFuelType] = useState("petrol");
   const [radiusValue, setRadiusValue] = useState(DEFAULT_RADIUS_VALUE);
   const [selectedStationId, setSelectedStationId] = useState(null);
+  const [isPickingLocation, setIsPickingLocation] = useState(false);
   const {
     error,
     hasRequestedLocation,
     isLoading,
     isRefreshing,
     lastUpdatedLabel,
+    locationSource,
     requestLocation,
     rowsCount,
+    setManualLocation,
     stations,
     status,
     userLocation,
@@ -50,7 +53,9 @@ export default function HomeRoute() {
   }, [selectedStationId, stationsInRange]);
 
   const locationLabel = userLocation
-    ? getLocationLabel(userLocation)
+    ? locationSource === "manual"
+      ? `Map pin · ${getLocationLabel(userLocation)}`
+      : `Current location · ${getLocationLabel(userLocation)}`
     : hasRequestedLocation
       ? "Location access still needed"
       : "Location access required";
@@ -62,26 +67,49 @@ export default function HomeRoute() {
       ? isInfiniteRadius(radiusValue)
         ? `No ${fuelType} stations are available in the published snapshot.`
         : `No ranked ${fuelType} stations were found within ${getRadiusMilesLabel(radiusValue)}.`
-      : "Enable location access to see nearby stations.";
-  const appStatus = isRefreshing ? `${status} Rendering updated results when ready.` : status;
+      : "Enable location access or pick a location on the map to see nearby stations.";
+  const appStatus = isPickingLocation
+    ? "Tap anywhere on the map to choose a location without using browser permissions."
+    : isRefreshing
+      ? `${status} Rendering updated results when ready.`
+      : status;
+
+  const handleRequestLocation = () => {
+    setIsPickingLocation(false);
+    void requestLocation();
+  };
+
+  const handleToggleLocationPicker = () => {
+    setIsPickingLocation((currentValue) => !currentValue);
+  };
+
+  const handlePickLocation = (coords) => {
+    setManualLocation(coords);
+    setIsPickingLocation(false);
+  };
 
   return (
     <AppShell
       bestStation={bestStation}
-      canRequestLocation={!userLocation}
+      canPickLocation={!isLoading}
+      canRequestLocation={!isLoading}
       error={error}
       headerBadge={headerBadge}
+      isPickingLocation={isPickingLocation}
       isRequestingLocation={isLoading && !userLocation}
       locationLabel={locationLabel}
       map={
         <FuelMap
+          isPickingLocation={isPickingLocation}
+          onPickLocation={handlePickLocation}
           onSelectStation={setSelectedStationId}
           selectedStationId={selectedStationId}
           stations={stationsInRange}
           userLocation={userLocation}
         />
       }
-      onRequestLocation={requestLocation}
+      onRequestLocation={handleRequestLocation}
+      onToggleLocationPicker={handleToggleLocationPicker}
       stationCount={stationsInRange.length || rowsCount}
       status={appStatus}
     >

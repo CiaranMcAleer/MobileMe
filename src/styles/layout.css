@@ -64,8 +64,13 @@
   line-height: 1.5;
 }
 
-.location-request-button {
+.location-actions {
+  display: grid;
+  gap: 0.75rem;
   margin-top: 0.9rem;
+}
+
+.location-request-button {
   min-height: 54px;
   width: 100%;
   border-radius: 18px;
@@ -74,6 +79,13 @@
   font-weight: 700;
 }
 
+.location-request-button.secondary {
+  background: #fff;
+}
+
+.location-request-button.secondary.is-active {
+  background: var(--accent-soft);
+}
 
 .location-request-button:disabled {
   cursor: wait;

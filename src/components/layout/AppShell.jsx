@@ -1,14 +1,17 @@
 import React from "react";
 export default function AppShell({
   bestStation,
+  canPickLocation,
   canRequestLocation,
   children,
   error,
   headerBadge,
+  isPickingLocation,
   isRequestingLocation,
   locationLabel,
   map,
   onRequestLocation,
+  onToggleLocationPicker,
   status,
   stationCount,
 }) {
@@ -34,16 +37,27 @@ export default function AppShell({
           <span className="eyebrow">Near</span>
           <strong>{locationLabel}</strong>
           <p>{status}</p>
-          {canRequestLocation ? (
-            <button
-              className="location-request-button"
-              disabled={isRequestingLocation}
-              onClick={onRequestLocation}
-              type="button"
-            >
-              {isRequestingLocation ? "Requesting location…" : "Enable my location"}
-            </button>
-          ) : null}
+          <div className="location-actions">
+            {canRequestLocation ? (
+              <button
+                className="location-request-button"
+                disabled={isRequestingLocation}
+                onClick={onRequestLocation}
+                type="button"
+              >
+                {isRequestingLocation ? "Requesting location…" : "Use current location"}
+              </button>
+            ) : null}
+            {canPickLocation ? (
+              <button
+                className={`location-request-button secondary ${isPickingLocation ? "is-active" : ""}`.trim()}
+                onClick={onToggleLocationPicker}
+                type="button"
+              >
+                {isPickingLocation ? "Cancel map pick" : "Pick on map instead"}
+              </button>
+            ) : null}
+          </div>
         </article>
 
         <article className="summary-card panel-shadow accent-card">

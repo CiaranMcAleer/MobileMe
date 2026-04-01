@@ -118,7 +118,14 @@ function addStationLayers(map) {
   });
 }
 
-export default function FuelMap({ onSelectStation, selectedStationId, stations, userLocation }) {
+export default function FuelMap({
+  isPickingLocation,
+  onPickLocation,
+  onSelectStation,
+  selectedStationId,
+  stations,
+  userLocation,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const popupRef = useRef(null);
@@ -126,6 +133,8 @@ export default function FuelMap({ onSelectStation, selectedStationId, stations, 
   const userMarkerRef = useRef(null);
   const stationLookupRef = useRef(new Map());
   const previousSelectionRef = useRef(null);
+  const isPickingLocationRef = useRef(isPickingLocation);
+  const onPickLocationRef = useRef(onPickLocation);
 
   const mapCenter = useMemo(() => {
     if (!userLocation) {
@@ -134,6 +143,12 @@ export default function FuelMap({ onSelectStation, selectedStationId, stations, 
 
     return [userLocation.longitude, userLocation.latitude];
   }, [userLocation]);
+
+  useEffect(() => {
+    isPickingLocationRef.current = isPickingLocation;
+    onPickLocationRef.current = onPickLocation;
+  }, [isPickingLocation, onPickLocation]);
+
 
   useEffect(() => {
     stationLookupRef.current = new Map(stations.map((station) => [station.id, station]));
@@ -170,6 +185,10 @@ export default function FuelMap({ onSelectStation, selectedStationId, stations, 
     });
 
     map.on("click", CLUSTER_LAYER_ID, (event) => {
+      if (isPickingLocationRef.current) {
+        return;
+      }
+
       const feature = map.queryRenderedFeatures(event.point, { layers: [CLUSTER_LAYER_ID] })[0];
       const clusterId = feature?.properties?.cluster_id;
       const source = map.getSource(STATION_SOURCE_ID);
@@ -196,12 +215,31 @@ export default function FuelMap({ onSelectStation, selectedStationId, stations, 
         return;
       }
 
+      if (isPickingLocationRef.current) {
+        onPickLocationRef.current?.({
+          latitude: station.latitude,
+          longitude: station.longitude,
+        });
+        return;
+      }
+
       popupRef.current
         ?.setLngLat([station.longitude, station.latitude])
         .setHTML(buildPopupMarkup(station))
         .addTo(map);
 
       onSelectStation(station.id);
+    });
+
+    map.on("click", (event) => {
+      if (!isPickingLocationRef.current) {
+        return;
+      }
+
+      onPickLocationRef.current?.({
+        latitude: event.lngLat.lat,
+        longitude: event.lngLat.lng,
+      });
     });
 
     const setPointerCursor = () => {
@@ -294,6 +332,17 @@ export default function FuelMap({ onSelectStation, selectedStationId, stations, 
       return;
     }
 
+    map.getCanvas().style.cursor = isPickingLocation ? "crosshair" : "";
+  }, [isPickingLocation]);
+
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
     const selectedStation = stations.find((station) => station.id === selectedStationId) ?? null;
 
     if (selectedMarkerRef.current) {
@@ -355,8 +404,11 @@ export default function FuelMap({ onSelectStation, selectedStationId, stations, 
           <h2>Nearby forecourts</h2>
         </div>
       </div>
-      <div className="map-frame">
+      <div className={`map-frame ${isPickingLocation ? "is-picking-location" : ""}`.trim()}>
         <div className="map-overlay-grid" aria-hidden="true" />
+        {isPickingLocation ? (
+          <div className="map-pick-banner">Tap the map to choose a location without browser permissions.</div>
+        ) : null}
         <div className="map-canvas" ref={containerRef} />
       </div>
     </section>
