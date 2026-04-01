@@ -18,6 +18,13 @@ if git diff --cached --quiet; then
   echo "Fuel snapshots unchanged; nothing to commit."
   exit 0
 fi
+if ! git config user.name >/dev/null; then
+  git config user.name "github-actions[bot]"
+fi
+
+if ! git config user.email >/dev/null; then
+  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+fi
 
 commit_date=$(date +%F)
 git commit -m "Refresh Fuel Finder snapshots ${commit_date}"
